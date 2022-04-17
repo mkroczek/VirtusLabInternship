@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -41,6 +43,33 @@ public class ReceiptControllerTest {
         assertEquals(3, receipt.entries().size());
         assertEquals(expectedTotalPrice, receipt.totalPrice());
         assertEquals(0, receipt.discounts().size());
+
+    }
+
+    @Test
+    void createReceiptWithTwoDiscountsTest(){
+        // Given
+        var productDb = new ProductDb();
+        var cart = new Basket();
+        var bread = productDb.getProduct("Bread");
+        var steak = productDb.getProduct("Steak");
+        var expectedTotalPrice = bread.price().multiply(BigDecimal.valueOf(3)).add(steak.price())
+                .multiply(BigDecimal.valueOf(0.85)).multiply(BigDecimal.valueOf(0.9));
+
+        cart.addProduct(bread);
+        cart.addProduct(bread);
+        cart.addProduct(bread);
+        cart.addProduct(steak);
+
+        // When
+        ResponseEntity<Receipt> receiptEntity = restTemplate.postForEntity("/receipt", cart, Receipt.class);
+        Receipt receipt = receiptEntity.getBody();
+
+        // Then
+        assertNotNull(receipt);
+        assertEquals(2, receipt.entries().size());
+        assertEquals(expectedTotalPrice, receipt.totalPrice());
+        assertEquals(2, receipt.discounts().size());
 
     }
 }
